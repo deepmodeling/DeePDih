@@ -1,0 +1,8 @@
+[project]
+name = "deepdih"
+version = "0.0.1"
+description = "Deep Potential driven dihedral scan toolkit."
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
