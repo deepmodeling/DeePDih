@@ -30,6 +30,13 @@ conda install -c conda-forge rdkit geometric tblite-python psi4 openmm
 pip install ase dpdata networkx
 ```
 
+If you want to use Gromacs topology, you also need to install ambertools, acpype and parmed.
+    
+```bash
+conda install -c conda-forge ambertools
+pip install acpype parmed
+```
+
 ### Install requirements from source
 
 #### DeePMd-kit
@@ -39,6 +46,12 @@ Please look at DeePMD-kit's [installation guide](https://github.com/deepmodeling
 #### Geometric-jit
 
 Accelerate Geometric using Numba and JIT. Please look at [this repository](https://github.com/WangXinyan940/geomeTRIC_jit).
+
+Numba is also needed if you want to use the JIT version of Geometric.
+
+```bash
+conda install -c conda-forge numba
+```
 
 ### Install DeePDih module from source
 

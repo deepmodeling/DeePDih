@@ -11,12 +11,12 @@ except ImportError:
 from ..utils import write_sdf
 
 
-def build_gmx_top(rdmol: Chem.rdchem.Mol, top: str = "MOL_GMX.top", gro: str = "MOL_GMX.gro"):
+def build_gmx_top(rdmol: Chem.rdchem.Mol, top: str = "MOL_GMX.top", gro: str = None):
     ncharge = Chem.GetFormalCharge(rdmol)
     with tempfile.TemporaryDirectory() as tmpdirname:
         tmpdir = Path(tmpdirname)
         inp_sdf = tmpdir / "input.sdf"
-        write_sdf(rdmol, inp_sdf)
+        write_sdf(rdmol, str(inp_sdf))
         ret = subprocess.run(
             [
                 "acpype",
@@ -33,7 +33,8 @@ def build_gmx_top(rdmol: Chem.rdchem.Mol, top: str = "MOL_GMX.top", gro: str = "
             ],
             cwd=tmpdir
         )
-        shutil.copy(tmpdir / "MOL.acpype" / "MOL_GMX.gro", gro)
+        if gro is not None:
+            shutil.copy(tmpdir / "MOL.acpype" / "MOL_GMX.gro", gro)
         system = parmed.load_file(str(tmpdir / "MOL.acpype" / "MOL_GMX.top"))
         system.save(top, overwrite=True)
     # check if we have a file with name output_top

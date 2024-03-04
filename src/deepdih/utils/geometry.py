@@ -95,6 +95,25 @@ def calc_max_disp(pos1, pos2):
     pos1 = np.dot(pos1, rotation)
     return np.sqrt(np.max(np.sum((pos1 - pos2) ** 2, axis=1)))
 
+def calc_r2(y_pred: np.ndarray, y_true: np.ndarray):
+    """Calculate the R^2 between two sets of values.
+
+    Parameters
+    ----------
+    y_pred : np.ndarray
+        The first set of values.
+    y_true : np.ndarray
+        The second set of values.
+
+    Returns
+    -------
+    float
+        The R^2 between the two sets of values.
+    """
+    ss_res = np.sum((y_true - y_pred) ** 2)
+    ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+    r2 = 1 - (ss_res / ss_tot)
+    return r2
 
 def get_mol_with_indices(
     mol_input, selected_indices=[], keep_properties=[], keep_mol_properties=[]
