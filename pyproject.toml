@@ -6,3 +6,11 @@ description = "Deep Potential driven dihedral scan toolkit."
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"deepdih" = [
+    "data/*"
+]

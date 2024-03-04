@@ -1,11 +1,10 @@
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
-from rdkit.Chem import AllChem, ChemicalForceFields
 from typing import List, Union, Tuple, Dict
+from .topology import getRingAtoms
 
 
-def regularize_aromaticity(mol: Chem.Mol) -> bool:
+def regularize_aromaticity(mol: Chem.rdchem.Mol) -> bool:
     """
     Regularize Aromaticity for a rdkit.Mol object. Rings with exocyclic double bonds will not be set aromatic.
     """
@@ -50,7 +49,7 @@ def regularize_aromaticity(mol: Chem.Mol) -> bool:
     return True
 
 
-def write_sdf(filename: str, rdmol: Union[Chem.Mol, List[Chem.Mol]]) -> None:
+def write_sdf(rdmol: Union[Chem.rdchem.Mol, List[Chem.rdchem.Mol]], filename: str) -> None:
     """
     Write a RDKit molecule to a SDF file.
 
@@ -67,7 +66,7 @@ def write_sdf(filename: str, rdmol: Union[Chem.Mol, List[Chem.Mol]]) -> None:
     w.close()
 
 
-def read_sdf(filename: str) -> List[Chem.Mol]:
+def read_sdf(filename: str) -> List[Chem.rdchem.Mol]:
     """
     Read a SDF file and return a list of RDKit molecule objects.
 
@@ -77,5 +76,13 @@ def read_sdf(filename: str) -> List[Chem.Mol]:
     Returns:
         A list of RDKit molecule objects.
     """
-    suppl = Chem.SDMolSupplier(filename)
+    suppl = Chem.SDMolSupplier(filename, sanitize=True, removeHs=False)
     return [x for x in suppl if x is not None]
+
+
+def fix_aromatic(mol: Chem.rdchem.Mol):
+    # set all atoms not on a ring to be non-aromatic
+    all_ring_atoms = getRingAtoms(mol, join=True)
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() not in all_ring_atoms:
+            atom.SetIsAromatic(False)

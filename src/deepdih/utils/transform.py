@@ -9,7 +9,7 @@ import numpy as np
 from typing import List
 
 
-def rdmol2atoms(rdmol: Chem.Mol) -> Atoms:
+def rdmol2atoms(rdmol: Chem.rdchem.Mol) -> Atoms:
     """
     Convert an RDKit molecule to an ASE Atoms object.
 
@@ -30,7 +30,7 @@ def rdmol2atoms(rdmol: Chem.Mol) -> Atoms:
     return ase_atoms
 
 
-def rdmol2mol(rdmol: Chem.Mol):
+def rdmol2mol(rdmol: Chem.rdchem.Mol):
     molecule = geometric.molecule.Molecule()
     molecule.elem = [a.GetSymbol() for a in rdmol.GetAtoms()]
     molecule.xyzs = [rdmol.GetConformer().GetPositions()]  # In Angstrom
@@ -39,6 +39,7 @@ def rdmol2mol(rdmol: Chem.Mol):
     ]
     molecule.top_settings["read_bonds"] = True
     return molecule
+
 
 def rdmol2graph(rdmol: Chem.rdchem.Mol, bond_to_break=[]) -> nx.Graph:
     atoms = [a for a in rdmol.GetAtoms()]
