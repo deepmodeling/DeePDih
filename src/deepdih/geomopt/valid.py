@@ -5,7 +5,7 @@ from rdkit import Chem
 from ..utils.geometry import calc_max_disp, calc_rmsd, calc_r2
 
 
-def plot_opt_results(opt_confs: List[Chem.rdchem.Mol], ref_confs: List[Chem.rdchem.Mol], filename: str = "result.png", draw_energy: bool = True) -> None:
+def plot_opt_results(opt_confs: List[Chem.rdchem.Mol], ref_confs: List[Chem.rdchem.Mol], filename: str = "result.png", draw_energy: bool = True) -> Tuple[float, float]:
     opt_positions = [conf.GetConformer().GetPositions() for conf in opt_confs]
     ref_positions = [conf.GetConformer().GetPositions() for conf in ref_confs]
     max_disp = [calc_max_disp(opt_pos, ref_pos) for opt_pos, ref_pos in zip(opt_positions, ref_positions)]
@@ -36,8 +36,8 @@ def plot_opt_results(opt_confs: List[Chem.rdchem.Mol], ref_confs: List[Chem.rdch
         plt.subplot(1, 3, 3)
         opt_energies = np.array([float(conf.GetProp('ENERGY')) for conf in opt_confs]) * 627.5
         ref_energies = np.array([float(conf.GetProp('ENERGY')) for conf in ref_confs]) * 627.5
-        opt_energies = opt_energies - opt_energies[0]
-        ref_energies = ref_energies - ref_energies[0]
+        opt_energies = opt_energies - opt_energies.mean()
+        ref_energies = ref_energies - ref_energies.mean()
         e_min = min(opt_energies.min(), ref_energies.min())
         e_max = max(opt_energies.max(), ref_energies.max())
         e_min = e_min - 0.1 * (e_max - e_min)
@@ -49,7 +49,9 @@ def plot_opt_results(opt_confs: List[Chem.rdchem.Mol], ref_confs: List[Chem.rdch
         plt.plot([e_min, e_max], [e_min, e_max], 'r--')
         plt.xlabel('MM energy (kcal/mol)')
         plt.ylabel('Reference energy (kcal/mol)')
-        plt.title('Energy scatter. R2 = {:.4f}'.format(r2))
+        rmse = np.sqrt(np.mean((opt_energies - ref_energies) ** 2))
+        plt.title('R2 = {:.4f}  RMSE = {:.4f} kcal/mol'.format(r2, rmse))
         plt.ticklabel_format(style='sci',scilimits=(0,0),axis='both')
     plt.tight_layout()
     _ = plt.savefig(filename)
+    return r2, rmse

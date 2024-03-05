@@ -64,19 +64,28 @@ def update_gmx_top(rdmol: Chem.rdchem.Mol, inp_top: str, parameters: Parameters,
     embedded_mol = TorEmbeddedMolecule(rdmol)
     info = load_gmx(inp_top)
     real_indices = load_real_indices(inp_top)
-    # work on info
 
+    torsion_keys = []
+    for torsion in embedded_mol.torsions:
+        ii, jj, kk, ll = torsion.torsion
+        ii, jj, kk, ll = real_indices[ii], real_indices[jj], real_indices[kk], real_indices[ll]
+        if jj > kk:
+            ii, jj, kk, ll = ll, kk, jj, ii
+        torsion_keys.append((ii, jj, kk, ll))
+
+    # work on info
     for term in range(len(info)):
         if info[term]["key"] == "dihedrals":
-            update_lines = []
             tor_data = info[term]["data"]
             cleaned_data = {}
             for line in tor_data:
                 line = line.split()
-                key = tuple([int(i) for i in line[:4]])
+                key = tuple([int(i)-1 for i in line[:4]])
                 val = [int(line[4]), float(line[5]), float(line[6]), int(line[7])]
                 if key[1] > key[2]:
                     key = (key[3], key[2], key[1], key[0])
+                if key in torsion_keys:
+                    continue
                 if key not in cleaned_data:
                     cleaned_data[key] = []
                 cleaned_data[key].append(val)
@@ -87,31 +96,27 @@ def update_gmx_top(rdmol: Chem.rdchem.Mol, inp_top: str, parameters: Parameters,
         except ValueError as e:
             continue
         # update prm to info
-        tor_indices = (real_indices[torsion.torsion[0]]+1, real_indices[torsion.torsion[1]]+1, real_indices[torsion.torsion[2]]+1, real_indices[torsion.torsion[3]]+1)
-        if tor_indices[1] > tor_indices[2]:
-            tor_indices = (tor_indices[3], tor_indices[2], tor_indices[1], tor_indices[0])
-        if tor_indices not in cleaned_data:
-            cleaned_data[tor_indices] = []
-        new_terms = []
+        ii, jj, kk, ll = torsion.torsion
+        ii, jj, kk, ll = real_indices[ii], real_indices[jj], real_indices[kk], real_indices[ll]
+        if jj > kk:
+            ii, jj, kk, ll = ll, kk, jj, ii
+        
+        added_lines = []
         for order in range(6):
             prm_val = added_prm[order].item()
-            # find original parameters
-            term = [t for t in cleaned_data[tor_indices] if t[0] == 9 and t[3] == order+1]
-            if len(term) == 0:
-                new_terms.append((9, 0.00, prm_val, order+1))
+            if abs(prm_val) < 1e-4:
+                continue
+            if prm_val > 0.0:
+                added_lines.append((9, 0.0, prm_val, order+1))
             else:
-                theta0 = term[0][1]
-                kconst = term[0][2]
-                if abs(theta0 - 180.0) < 1.0:
-                    kconst = - kconst
-                new_terms.append((9, 0.0, kconst + prm_val, order+1))
-        cleaned_data[tor_indices] = new_terms
+                added_lines.append((9, 180.0, -prm_val, order+1))
+        if len(added_lines) > 0:
+            cleaned_data[(ii, jj, kk, ll)] = added_lines
+        
     tor_text = []
     for key in cleaned_data:
         for val in cleaned_data[key]:
-            if abs(val[2]) < 1e-3:
-                continue
-            tor_text.append(f'{key[0]:>5} {key[1]:>5} {key[2]:>5} {key[3]:>5} {val[0]:>5} {val[1]:6.2f} {val[2]:>16.8f} {val[3]:5}')
+            tor_text.append(f'{key[0]+1:>5} {key[1]+1:>5} {key[2]+1:>5} {key[3]+1:>5} {val[0]:>5} {val[1]:6.2f} {val[2]:>16.8f} {val[3]:5}')
 
     for term in range(len(info)):
         if info[term]["key"] == "dihedrals":
