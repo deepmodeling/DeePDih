@@ -80,9 +80,7 @@ def get_eqv_atoms(rdmol: Chem.rdchem.Mol):
 
 
 def if_same_embed(e1, e2):
-    dist1 = np.linalg.norm(e1 - e2)
-    dist2 = np.linalg.norm(e1[::-1, :] - e2)
-    dist = min(dist1, dist2)
+    dist = np.linalg.norm(e1 - e2)
     if dist < 1e-2:
         return True
     return False
@@ -113,7 +111,9 @@ class TorEmbeddedMolecule:
         for tor in get_rotamers(rdmol):
             all_tors += get_torsions_from_rotamer(rdmol, tor[1:3])
         for tor in all_tors:
-            tor_embed = embed[tor, :]
+            tor_embed1 = embed[tor, :]
+            tor_embed2 = embed[tor[::-1], :]
+            tor_embed = (tor_embed1 + tor_embed2) / 2
             self.torsions.append(EmbeddedTorsion(tor, tor_embed))
         self.conf = conf
         self.target = target

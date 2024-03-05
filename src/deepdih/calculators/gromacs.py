@@ -53,7 +53,7 @@ class GromacsTopCalculator(Calculator):
                     torsion_force.setTorsionParameters(ntor, ii, jj, kk, ll, perodicity, phase, 0.0)
 
         self.integrator = mm.VerletIntegrator(1e-12*unit.femtosecond)
-        self.context = mm.Context(self.system, self.integrator, mm.Platform.getPlatformByName('Reference'))
+        self.context = mm.Context(self.system, self.integrator, mm.Platform.getPlatformByName('CPU'))
 
 
     def calculate(
