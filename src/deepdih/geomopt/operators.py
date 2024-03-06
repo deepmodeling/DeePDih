@@ -51,7 +51,7 @@ def dihedral_scan(
     cons_dihedrals = find_constraint_elements(
         rdmol, return_all=True, add_improper=True)
     hbond_bias = OpenMMBiasCalculator(
-        rdmol, constraints=[], h_bond_repulsion=True)
+        rdmol, restraints=[], h_bond_repulsion=True)
     ff_potential = merge_calculators(calculator, hbond_bias)
 
     # initial optimization
@@ -72,7 +72,7 @@ def relax_conformation(rdmol: Chem.rdchem.Mol, calculator: Calculator) -> Chem.r
     res_dihedrals = find_constraint_elements(
         rdmol, return_all=True, add_improper=True)
     ff_bias = OpenMMBiasCalculator(
-        rdmol, restraints=res_dihedrals, h_bond_repulsion=True)
+        rdmol, restraints=res_dihedrals, restraint_ring=True, h_bond_repulsion=True)
     ff_potential = merge_calculators(calculator, ff_bias)
     # 2. add
     freeze_elements = find_constraint_elements(

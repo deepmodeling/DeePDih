@@ -85,6 +85,13 @@ def if_same_embed(e1, e2):
         return True
     return False
 
+
+def get_all_torsions_to_opt(rdmol: Chem.rdchem.Mol):
+    all_tors = []
+    for tor in get_rotamers(rdmol):
+        all_tors += get_torsions_from_rotamer(rdmol, tor[1:3])
+    return all_tors
+
 class EmbeddedTorsion:
     def __init__(self, torsion, embed, param=None):
         self.torsion = torsion
@@ -106,10 +113,8 @@ class TorEmbeddedMolecule:
         self.smiles = Chem.MolToSmiles(rdmol) 
         self.torsions = []
         embed = get_embed(rdmol)
-        all_tors = []
+        all_tors = get_all_torsions_to_opt(rdmol)
         embed = get_embed(rdmol)
-        for tor in get_rotamers(rdmol):
-            all_tors += get_torsions_from_rotamer(rdmol, tor[1:3])
         for tor in all_tors:
             tor_embed1 = embed[tor, :]
             tor_embed2 = embed[tor[::-1], :]

@@ -25,7 +25,8 @@ class OpenMMBiasCalculator(Calculator):
     def __init__(
         self,
         rdmol: Chem.rdchem.Mol,
-        restraints: List[Tuple[int, int, int, int]] = None,
+        restraints: List[Tuple[int, int, int, int]] = [],
+        restraint_ring: bool = False,
         h_bond_repulsion: bool = True, **kwargs
     ):
         Calculator.__init__(self, label=self.name, **kwargs)
@@ -81,6 +82,12 @@ class OpenMMBiasCalculator(Calculator):
             force.addPerTorsionParameter("k")
             for ii, jj, kk, ll, target in target_vals:
                 force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, settings['relax_torsion_bias']])
+            self.system.addForce(force)
+
+        # restraint 3/4/5/6-membered rings
+        # add angle restraint on heavy-heavy-heavy and heavy-heavy-hydrogen angles
+        if restraint_ring:
+            force = mm.HarmonicAngleForce()
             self.system.addForce(force)
 
         # create a integrator
