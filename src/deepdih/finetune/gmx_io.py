@@ -81,7 +81,8 @@ def update_gmx_top(rdmol: Chem.rdchem.Mol, inp_top: str, parameters: Parameters,
             for line in tor_data:
                 line = line.split()
                 key = tuple([int(i)-1 for i in line[:4]])
-                val = [int(line[4]), float(line[5]), float(line[6]), int(line[7])]
+                val = [int(line[4]), float(line[5]),
+                       float(line[6]), int(line[7])]
                 if key[1] > key[2]:
                     key = (key[3], key[2], key[1], key[0])
                 if key in torsion_keys:
@@ -100,7 +101,7 @@ def update_gmx_top(rdmol: Chem.rdchem.Mol, inp_top: str, parameters: Parameters,
         ii, jj, kk, ll = real_indices[ii], real_indices[jj], real_indices[kk], real_indices[ll]
         if jj > kk:
             ii, jj, kk, ll = ll, kk, jj, ii
-        
+
         added_lines = []
         for order in range(6):
             prm_val = added_prm[order].item()
@@ -112,11 +113,12 @@ def update_gmx_top(rdmol: Chem.rdchem.Mol, inp_top: str, parameters: Parameters,
                 added_lines.append((9, 180.0, -prm_val, order+1))
         if len(added_lines) > 0:
             cleaned_data[(ii, jj, kk, ll)] = added_lines
-        
+
     tor_text = []
     for key in cleaned_data:
         for val in cleaned_data[key]:
-            tor_text.append(f'{key[0]+1:>5} {key[1]+1:>5} {key[2]+1:>5} {key[3]+1:>5} {val[0]:>5} {val[1]:6.2f} {val[2]:>16.8f} {val[3]:5}')
+            tor_text.append(
+                f'{key[0]+1:>5} {key[1]+1:>5} {key[2]+1:>5} {key[3]+1:>5} {val[0]:>5} {val[1]:6.2f} {val[2]:>16.8f} {val[3]:5}')
 
     for term in range(len(info)):
         if info[term]["key"] == "dihedrals":

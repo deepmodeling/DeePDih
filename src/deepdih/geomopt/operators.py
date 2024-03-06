@@ -77,7 +77,7 @@ def relax_conformation(rdmol: Chem.rdchem.Mol, calculator: Calculator) -> Chem.r
     # 2. add
     freeze_elements = find_constraint_elements(
         rdmol, return_all=False, add_improper=True)
-    rdmol = optimize(rdmol, calculator, freeze_elements)
+    rdmol = optimize(rdmol, ff_potential, freeze_elements)
     return rdmol
 
 
