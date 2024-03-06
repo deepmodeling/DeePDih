@@ -98,28 +98,29 @@ def get_rotamers_from_graph(rdmol: Chem.rdchem.Mol) -> List[Tuple[int]]:
     return rotamers
 
 
-def find_constraint_elements(rdmol: Chem.rdchem.Mol, return_all: bool = False, add_improper: bool = False) -> List[Tuple[int]]:
+def find_constraint_elements(rdmol: Chem.rdchem.Mol, return_all: bool = False, add_proper: bool = True, add_improper: bool = False) -> List[Tuple[int]]:
     rotamers = get_rotamers_from_graph(rdmol)
     constraint_elements = []
-    for rotamer in rotamers:
-        # find the dihedrals on the rotamer
-        dihedrals = []
-        ii, jj = rotamer
-        bonded_to_ii, bonded_to_jj = list(rdmol.GetAtomWithIdx(ii).GetNeighbors()), list(
-            rdmol.GetAtomWithIdx(jj).GetNeighbors())
-        for kk in bonded_to_ii:
-            for ll in bonded_to_jj:
-                if kk.GetIdx() != jj and ll.GetIdx() != ii and kk.GetIdx() != ll.GetIdx():
-                    dihedrals.append((kk.GetIdx(), ii, jj, ll.GetIdx()))
-        if not return_all:
-            # pick the heaviest dihedral
-            dihedral_weights = []
-            for dihedral in dihedrals:
-                dihedral_weights.append(
-                    sum([rdmol.GetAtomWithIdx(i).GetAtomicNum() for i in dihedral]))
-            constraint_elements.append(dihedrals[np.argmax(dihedral_weights)])
-        else:
-            constraint_elements.extend(dihedrals)
+    if add_proper:
+        for rotamer in rotamers:
+            # find the dihedrals on the rotamer
+            dihedrals = []
+            ii, jj = rotamer
+            bonded_to_ii, bonded_to_jj = list(rdmol.GetAtomWithIdx(ii).GetNeighbors()), list(
+                rdmol.GetAtomWithIdx(jj).GetNeighbors())
+            for kk in bonded_to_ii:
+                for ll in bonded_to_jj:
+                    if kk.GetIdx() != jj and ll.GetIdx() != ii and kk.GetIdx() != ll.GetIdx():
+                        dihedrals.append((kk.GetIdx(), ii, jj, ll.GetIdx()))
+            if not return_all:
+                # pick the heaviest dihedral
+                dihedral_weights = []
+                for dihedral in dihedrals:
+                    dihedral_weights.append(
+                        sum([rdmol.GetAtomWithIdx(i).GetAtomicNum() for i in dihedral]))
+                constraint_elements.append(dihedrals[np.argmax(dihedral_weights)])
+            else:
+                constraint_elements.extend(dihedrals)
     if add_improper:
         constraint_elements.extend(enumerate_impropers(rdmol))
     return constraint_elements

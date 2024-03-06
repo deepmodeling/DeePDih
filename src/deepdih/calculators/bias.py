@@ -25,7 +25,7 @@ class OpenMMBiasCalculator(Calculator):
     def __init__(
         self,
         rdmol: Chem.rdchem.Mol,
-        constraints: List[Tuple[int, int, int, int]] = None,
+        restraints: List[Tuple[int, int, int, int]] = None,
         h_bond_repulsion: bool = True, **kwargs
     ):
         Calculator.__init__(self, label=self.name, **kwargs)
@@ -69,20 +69,22 @@ class OpenMMBiasCalculator(Calculator):
         # create a force
         target_vals = []
         positions = rdmol.GetConformer().GetPositions()
-        for ii, jj, kk, ll in constraints:
+        for ii, jj, kk, ll in restraints:
             dih_val = dihedral(
                 positions[ii], positions[jj], positions[kk], positions[ll])
             target_vals.append((ii, jj, kk, ll, dih_val))
-        force = mm.PeriodicTorsionForce()
-
+        
         if len(target_vals) > 0:
+            # force = mm.PeriodicTorsionForce()
+            force = mm.CustomTorsionForce("0.5*k*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-theta0); pi = 3.1415926535")
+            force.addPerTorsionParameter("theta0")
+            force.addPerTorsionParameter("k")
             for ii, jj, kk, ll, target in target_vals:
-                force.addTorsion(ii, jj, kk, ll, 2, target / 180.0 * np.pi, settings['relax_torsion_bias'])
+                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, settings['relax_torsion_bias']])
             self.system.addForce(force)
 
         # create a integrator
-        self.integrator = mm.LangevinIntegrator(
-            300*unit.kelvin, 1.0/unit.picosecond, 0.002*unit.picoseconds)
+        self.integrator = mm.VerletIntegrator(1e-12*unit.picoseconds)
         platform = mm.Platform.getPlatformByName('Reference')
         self.context = mm.Context(self.system, self.integrator, platform)
 
