@@ -54,17 +54,20 @@ def mol_to_graph_matrix(rdmol: Chem.rdchem.Mol) -> Tuple[np.ndarray, np.ndarray]
     return adj, node_features
 
 
-def get_embed(rdmol: Chem.rdchem.Mol):
+def get_embed(rdmol: Chem.rdchem.Mol, layers=1):
     adj, node = mol_to_graph_matrix(rdmol)
     natom = adj.shape[0]
-    support = np.dot(node[:, :128], EMBED_W1[:128, :128])
-    out = np.dot(adj, support)
+
+    out = node[:,:128]
+    for i in range(layers):
+        support = np.dot(out, EMBED_W1[:128, :128])
+        out = np.dot(adj, support)
     out = np.concatenate((out, node[:, 128:]), axis=1)
     return out
 
 
-def get_eqv_atoms(rdmol: Chem.rdchem.Mol):
-    embed = get_embed(rdmol)
+def get_eqv_atoms(rdmol: Chem.rdchem.Mol, layers=1):
+    embed = get_embed(rdmol, layers=layers)
     natom, nfeat = embed.shape[0], embed.shape[1]
     dist = np.power(
         embed.reshape((natom, 1, nfeat)) - embed.reshape((1, natom, nfeat)), 2
@@ -73,7 +76,7 @@ def get_eqv_atoms(rdmol: Chem.rdchem.Mol):
     for na in range(natom):
         eqv_list.append([na])
         for nb in range(natom):
-            if dist[na, nb] < 1e-2 and na != nb:
+            if dist[na, nb] < 1e-3 and na != nb:
                 eqv_list[-1].append(nb)
     return eqv_list
 

@@ -10,7 +10,15 @@ from ..settings import settings
 from ..geomopt import dihedral_scan, recalc_energy, relax_conformation, plot_opt_results
 from ..mollib import create_lib
 from ..finetune import finetune_workflow, update_gmx_top
-from ..utils import read_sdf, write_sdf, get_rotamers, get_all_torsions_to_opt, EV_TO_HARTREE, EV_TO_KJ_MOL, TorEmbeddedMolecule
+from ..utils import (
+    read_sdf, 
+    write_sdf, 
+    get_rotamers, 
+    get_all_torsions_to_opt, 
+    EV_TO_HARTREE, 
+    EV_TO_KJ_MOL, 
+    TorEmbeddedMolecule
+)
 
 
 def load_mol_files(mol_files: list) -> list:
@@ -89,8 +97,13 @@ def build_gmx_parameter_lib(
         calculator = GromacsTopCalculator(
             frag, f"{output_gmx_top_folder}/fragment_{nfrag}.top")
         init_conformations = read_sdf(f"{lib_folder}/fragment_{nfrag}.sdf")
-        relax_conformations = [relax_conformation(
-            mol, calculator) for mol in init_conformations]
+        relax_conformations = [
+            relax_conformation(
+                mol, 
+                calculator
+            ) 
+            for mol in init_conformations
+        ]
         recalc_conformations = [recalc_energy(
             mol, calculator) for mol in relax_conformations]
         write_sdf(recalc_conformations,
@@ -115,9 +128,9 @@ def build_gmx_parameter_lib(
         mm_positions = [conf.GetConformer().GetPositions()
                         for conf in recalc_confs]
         qm_energies = np.array([float(conf.GetProp('ENERGY'))
-                               for conf in qm_confs], dtype=float)
+                               for conf in qm_confs])
         mm_energies = np.array([float(conf.GetProp('ENERGY'))
-                               for conf in recalc_confs], dtype=float)
+                               for conf in recalc_confs])
         qm_energies = qm_energies - qm_energies.mean()
         mm_energies = mm_energies - mm_energies.mean()
         delta_energies = qm_energies - mm_energies
