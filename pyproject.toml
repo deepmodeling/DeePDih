@@ -1,6 +1,6 @@
 [project]
 name = "deepdih"
-version = "0.0.1"
+version = "0.1.0"
 description = "Deep Potential driven dihedral scan toolkit."
 
 [build-system]
