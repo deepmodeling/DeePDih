@@ -15,11 +15,16 @@ def resp_cmd():
     parser = argparse.ArgumentParser(description="Calculate RESP charge")
     parser.add_argument("--input", help="Input sdf file")
     parser.add_argument("--output", help="Output txt file")
+    parser.add_argument("--memory", help="Memory for psi4", default="2GB")
     args = parser.parse_args()
 
     from rdkit import Chem
     rdmol = Chem.SDMolSupplier(args.input, removeHs=False, sanitize=True)[0]
 
+    import psi4
+
+    # set memory
+    psi4.set_memory(args.memory)
 
     resp_charge = get_resp_charge(rdmol)
     with open(args.output, "w") as f:
