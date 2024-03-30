@@ -14,3 +14,6 @@ where = ["src"]
 "deepdih" = [
     "data/*"
 ]
+
+[project.scripts]
+deepdih-resp = "deepdih.cli:resp_cmd"

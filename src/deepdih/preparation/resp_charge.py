@@ -46,3 +46,4 @@ def get_resp_charge(rdmol: Chem.rdchem.Mol):
 
     charges3_2 = resp.resp(mol_list, options)
     return charges3_2[1]
+
