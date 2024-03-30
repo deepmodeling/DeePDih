@@ -18,7 +18,9 @@ def resp_cmd():
     args = parser.parse_args()
 
     from rdkit import Chem
-    rdmol = Chem.SDMolSupplier(args.input)[0]
+    rdmol = Chem.SDMolSupplier(args.input, removeHs=False, sanitize=True)[0]
+
+
     resp_charge = get_resp_charge(rdmol)
     with open(args.output, "w") as f:
         f.write("\n".join([f"{c:16.8f}" for c in resp_charge]))
