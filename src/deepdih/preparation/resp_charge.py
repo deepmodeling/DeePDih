@@ -46,7 +46,8 @@ def get_resp_charge(rdmol: Chem.rdchem.Mol):
         "VDW_RADII": {
             "BR": 1.80,
             "I": 1.95
-        }
+        },
+        "BASIS_ESP": "def2-SVP"
     }
     mol_list = [mol]
     charges3_1 = resp.resp(mol_list, options)
@@ -55,7 +56,8 @@ def get_resp_charge(rdmol: Chem.rdchem.Mol):
         "VDW_RADII": {
             "BR": 1.80,
             "I": 1.95
-        }
+        },
+        "BASIS_ESP": "def2-SVP"
     }
     resp.set_stage2_constraint(mol, charges3_1[1], options)
 
