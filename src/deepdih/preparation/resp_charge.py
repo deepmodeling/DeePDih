@@ -34,16 +34,19 @@ def get_resp_charge(rdmol: Chem.rdchem.Mol):
     options = {}
     resp.set_stage2_constraint(mol, charges3_1[1], options)
 
-    options['constraint_group'] = []
-    eqv_sets = []
-    for s in eqv_atoms:
-        new_set = set(s)
-        if len(new_set) > 1 and new_set not in eqv_sets:
-            eqv_sets.append(new_set)
+    # options['constraint_group'] = []
+    # eqv_sets = []
+    # for s in eqv_atoms:
+    #     new_set = set(s)
+    #     if len(new_set) > 1 and new_set not in eqv_sets:
+    #         eqv_sets.append(new_set)
 
-    for eset in eqv_sets:
-        options['constraint_group'].append([i+1 for i in eset])
+    # for eset in eqv_sets:
+    #     options['constraint_group'].append([i+1 for i in eset])
 
     charges3_2 = resp.resp(mol_list, options)
-    return charges3_2[1]
+    charges_ret = charges3_2[1]
+    for eq_grp in eqv_atoms:
+        charges_ret[eq_grp] = charges_ret[eq_grp].mean()
+    return charges_ret
 
