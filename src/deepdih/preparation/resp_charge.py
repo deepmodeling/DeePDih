@@ -11,6 +11,19 @@ from ..utils.embedding import get_eqv_atoms
 
 
 def get_resp_charge(rdmol: Chem.rdchem.Mol):
+    psi4.driver.qcdb.parker._expected_bonds = {
+        'H': 1,
+        'C': 4,
+        'N': 3,
+        'O': 2,
+        'F': 1,
+        'P': 3,
+        'S': 2,
+        "CL": 1,
+        "BR": 1,
+        "I": 1
+    }
+
     eqv_atoms = get_eqv_atoms(rdmol, layers=2)
     geom_list = []
     for atom in rdmol.GetAtoms():
