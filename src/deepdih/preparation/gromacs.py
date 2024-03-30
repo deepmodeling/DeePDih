@@ -48,7 +48,7 @@ def build_gmx_top(rdmol: Chem.rdchem.Mol, top: str = "MOL_GMX.top", gro: str = N
                 ],
                 cwd=tmpdir
             )
-            with open("charge.txt", "r") as f:
+            with open(f"/{str(tmpdir)}/charge.txt", "r") as f:
                 charges = [float(line.strip()) for line in f]
 
         system = parmed.load_file(str(tmpdir / "MOL.acpype" / "MOL_GMX.top"))
