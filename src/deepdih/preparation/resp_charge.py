@@ -16,6 +16,8 @@ def get_resp_charge(rdmol: Chem.rdchem.Mol):
     for atom in rdmol.GetAtoms():
         atom_idx = atom.GetIdx()
         atom_symbol = atom.GetSymbol()
+        if len(atom_symbol) > 1:
+            atom_symbol = f"{atom_symbol[0].upper()}{atom_symbol[1:].lower()}"
         atom_pos = rdmol.GetConformer().GetAtomPosition(atom_idx)
         geom_list.append(f"{atom_symbol} {atom_pos.x} {atom_pos.y} {atom_pos.z}\n")
     geom = "".join(geom_list)
