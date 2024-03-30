@@ -334,6 +334,22 @@ class Fragmentation(object):
         self.get_selected_atoms()
         print(f"Selected Atoms after adding -C=O: {self.selected_atoms}")
 
+        # add C(-O)=O linked to self.selected_atoms if the C is already in the selected atoms
+        for atom_idx in self.selected_atoms:
+            atom = self.mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6:
+                no_linked_to_oxygen = 0
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    neighbor_anum = neighbor.GetAtomicNum()
+                    if neighbor_anum == 8:
+                        no_linked_to_oxygen += 1
+                if no_linked_to_oxygen == 2:
+                    for neighbor in atom.GetNeighbors():
+                        self.add_atom(neighbor.GetIdx())
+        self.get_selected_atoms()
+        print(f"Selected Atoms after adding C(-O)=O: {self.selected_atoms}")
+
         # Find non-C/H atoms linked to layer_3
         for atom_idx in layer_3:
             atom = self.mol.GetAtomWithIdx(atom_idx)
