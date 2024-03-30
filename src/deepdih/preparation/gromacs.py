@@ -38,7 +38,18 @@ def build_gmx_top(rdmol: Chem.rdchem.Mol, top: str = "MOL_GMX.top", gro: str = N
             shutil.copy(tmpdir / "MOL.acpype" / "MOL_GMX.gro", gro)
 
         if use_resp:
-            charges = get_resp_charge(rdmol)
+            ret = subprocess.run(
+                [
+                    "deepdih-resp",
+                    "--input",
+                    "input.sdf",
+                    "--output",
+                    "charge.txt"
+                ],
+                cwd=tmpdir
+            )
+            with open("charge.txt", "r") as f:
+                charges = [float(line.strip()) for line in f]
 
         system = parmed.load_file(str(tmpdir / "MOL.acpype" / "MOL_GMX.top"))
         if use_resp:
