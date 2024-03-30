@@ -42,11 +42,21 @@ def get_resp_charge(rdmol: Chem.rdchem.Mol):
     mol.update_geometry()
     mol.set_name('conformer1')
 
-    options = {}
+    options = {
+        "VDW_RADII": {
+            "BR": 1.80,
+            "I": 1.95
+        }
+    }
     mol_list = [mol]
     charges3_1 = resp.resp(mol_list, options)
 
-    options = {}
+    options = {
+        "VDW_RADII": {
+            "BR": 1.80,
+            "I": 1.95
+        }
+    }
     resp.set_stage2_constraint(mol, charges3_1[1], options)
 
     # options['constraint_group'] = []
