@@ -305,6 +305,18 @@ class Fragmentation(object):
         self.get_selected_atoms()
         print(f"Selected Atoms after adding rings: {self.selected_atoms}")
 
+        # add C=O linked to rings selected
+        for atom_idx in self.selected_atoms:
+            atom = self.mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6 and atom_idx in all_ring_atoms:
+                for neighbor in atom.GetNeighbors():
+                    neighbor_idx = neighbor.GetIdx()
+                    neighbor_anum = neighbor.GetAtomicNum()
+                    if neighbor_anum == 8 and neighbor_idx not in all_ring_atoms and neighbor.GetDegree() == 1:
+                        self.add_atom(neighbor_idx)
+        self.get_selected_atoms()
+        print(f"Selected Atoms after adding C_ring=O: {self.selected_atoms}")
+
         # Find C=O connected to self.selected_atoms and add them using self.add_atom
         for atom_idx in self.selected_atoms:
             atom = self.mol.GetAtomWithIdx(atom_idx)
@@ -320,7 +332,7 @@ class Fragmentation(object):
                             self.add_atom(nei.GetIdx())
                             break
         self.get_selected_atoms()
-        print(f"Selected Atoms after adding C=O: {self.selected_atoms}")
+        print(f"Selected Atoms after adding -C=O: {self.selected_atoms}")
 
         # Find non-C/H atoms linked to layer_3
         for atom_idx in layer_3:
