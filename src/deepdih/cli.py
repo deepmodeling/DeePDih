@@ -15,6 +15,7 @@ def resp_cmd():
     parser = argparse.ArgumentParser(description="Calculate RESP charge")
     parser.add_argument("--input", help="Input sdf file")
     parser.add_argument("--output", help="Output txt file")
+    parser.add_argument("--threads", type=int, default=1, help="Number of threads for psi4")
     parser.add_argument("--memory", help="Memory for psi4", default="2GB")
     args = parser.parse_args()
 
@@ -23,6 +24,8 @@ def resp_cmd():
 
     import psi4
 
+    # set threads
+    psi4.set_num_threads(args.threads)
     # set memory
     psi4.set_memory(args.memory)
 
