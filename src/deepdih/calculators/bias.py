@@ -15,6 +15,7 @@ import networkx as nx
 from ..settings import settings
 from ..utils.geometry import dihedral
 from ..utils import EV_TO_HARTREE, EV_TO_KJ_MOL, rdmol2graph
+from ..utils.topology import getRingAtoms
 
 
 class OpenMMBiasCalculator(Calculator):
@@ -85,10 +86,35 @@ class OpenMMBiasCalculator(Calculator):
             self.system.addForce(force)
 
         # restraint 3/4/5/6-membered rings
-        # add angle restraint on heavy-heavy-heavy and heavy-heavy-hydrogen angles
         if restraint_ring:
+            # list ring atoms
+            ring_atoms = getRingAtoms(rdmol, join=True)
+
+            # add angle restraint on heavy-heavy-heavy and heavy-heavy-hydrogen angles
             force = mm.HarmonicAngleForce()
             self.system.addForce(force)
+
+            # add heavy atom rmsd restraint
+            force = mm.CustomExternalForce("k*((x-x0)^2+(y-y0)^2+(z-z0)^2)")
+            force.addPerParticleParameter("k")
+            force.addPerParticleParameter("x0")
+            force.addPerParticleParameter("y0")
+            force.addPerParticleParameter("z0")
+            for iatom in range(ring_atoms):
+                atom = self.rdmol.GetAtomWithIdx(iatom)
+                if atom.GetAtomicNum() > 1:
+                    force.addParticle(
+                        iatom, 
+                        [
+                            settings['ring_atom_rmsd'], 
+                            positions[iatom][0]*0.1, 
+                            positions[iatom][1]*0.1, 
+                            positions[iatom][2]*0.1
+                        ]
+                    )
+            self.system.addForce(force)
+
+
 
         # create a integrator
         self.integrator = mm.VerletIntegrator(1e-12*unit.picoseconds)
