@@ -100,7 +100,7 @@ class OpenMMBiasCalculator(Calculator):
             force.addPerParticleParameter("x0")
             force.addPerParticleParameter("y0")
             force.addPerParticleParameter("z0")
-            for iatom in range(ring_atoms):
+            for iatom in ring_atoms:
                 atom = self.rdmol.GetAtomWithIdx(iatom)
                 if atom.GetAtomicNum() > 1:
                     force.addParticle(
