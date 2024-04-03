@@ -92,6 +92,6 @@ def create_lib(rdmols: List[Chem.rdchem.Mol]) -> List[Chem.rdchem.Mol]:
                     break
             if not found_eqv_tor:
                 raise DeePDihError(
-                    f"Missing torsion {tor} in the fragment library.")
+                    f"Missing {tor} in the fragment library.")
 
     return frags
