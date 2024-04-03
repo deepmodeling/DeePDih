@@ -23,8 +23,7 @@ def build_gmx_top(
     top: str = "MOL_GMX.top", 
     gro: str = None, 
     use_resp: bool = False,
-    opt_engine = None,
-    num_conf: int = 10
+    opt_engine = None
 ):
     ncharge = Chem.GetFormalCharge(rdmol)
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -62,34 +61,35 @@ def build_gmx_top(
             # deal with conformations
             confs = []
             confs.append(rdmol)
-            for nc in range(1, num_conf):
-                new_mol = deepcopy(rdmol)
-                AllChem.EmbedMolecule(new_mol)
-                mol_opt = optimize(new_mol, sum_engine, freeze=[])
-                confs.append(new_mol)
+            # for nc in range(1, num_conf):
+            #     new_mol = deepcopy(rdmol)
+            #     AllChem.EmbedMolecule(new_mol)
+            #     mol_opt = optimize(new_mol, sum_engine, freeze=[])
+            #     confs.append(new_mol)
             confs = [recalc_energy(c, opt_engine) for c in confs]
             confs = sorted(confs, key=lambda x: float(x.GetProp("ENERGY")))
             lowest_e = float(confs[0].GetProp("ENERGY"))
             confs = [c for c in confs if float(c.GetProp("ENERGY")) < lowest_e + 5.0 / 23.06054]
 
-            rmsd_matrix = np.zeros((len(confs), len(confs)))
-            for ii in range(len(confs)):
-                for jj in range(ii+1, len(confs)):
-                    conf_ii = confs[ii].GetConformer().GetPositions()
-                    conf_jj = confs[jj].GetConformer().GetPositions()
-                    rmsd_matrix[ii, jj] = calc_rmsd(conf_ii, conf_jj)
-                    rmsd_matrix[jj, ii] = rmsd_matrix[ii, jj]
+            # rmsd_matrix = np.zeros((len(confs), len(confs)))
+            # for ii in range(len(confs)):
+            #     for jj in range(ii+1, len(confs)):
+            #         conf_ii = confs[ii].GetConformer().GetPositions()
+            #         conf_jj = confs[jj].GetConformer().GetPositions()
+            #         rmsd_matrix[ii, jj] = calc_rmsd(conf_ii, conf_jj)
+            #         rmsd_matrix[jj, ii] = rmsd_matrix[ii, jj]
 
-            conf_remove = []
-            for ii in range(len(confs)):
-                if ii in conf_remove:
-                    continue
-                for jj in range(ii+1, len(confs)):
-                    if jj in conf_remove:
-                        continue
-                    if rmsd_matrix[ii, jj] < 0.5:
-                        conf_remove.append(jj)
-            conf_final = [c for i, c in enumerate(confs) if i not in conf_remove]
+            # conf_remove = []
+            # for ii in range(len(confs)):
+            #     if ii in conf_remove:
+            #         continue
+            #     for jj in range(ii+1, len(confs)):
+            #         if jj in conf_remove:
+            #             continue
+            #         if rmsd_matrix[ii, jj] < 0.5:
+            #             conf_remove.append(jj)
+            # conf_final = [c for i, c in enumerate(confs) if i not in conf_remove]
+            conf_final = confs
 
             conf_final_sdf = []
             for i, c in enumerate(conf_final):
