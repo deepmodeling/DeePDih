@@ -16,7 +16,7 @@ def mol_to_graph_matrix(rdmol: Chem.rdchem.Mol) -> Tuple[np.ndarray, np.ndarray]
     # embedding: element one-hot + aromatic + degree + formal_charge + num_hydrogens
     num_atom = rdmol.GetNumAtoms()
     adj = np.zeros((num_atom, num_atom))
-    node_features = np.zeros((num_atom, 128 + 10))
+    node_features = np.zeros((num_atom, 128 + 15))
     all_ring_atoms = getRingAtoms(rdmol, join=True)
     all_ring_no_join = getRingAtoms(rdmol, join=False)
     for i in range(num_atom):
@@ -40,10 +40,16 @@ def mol_to_graph_matrix(rdmol: Chem.rdchem.Mol) -> Tuple[np.ndarray, np.ndarray]
         # get linked atoms
         num_hs = len([atom for atom in neighbors if atom.GetAtomicNum() == 1])
         # node_features[i, 137] = num_hs
-        if num_hs == 0:
-            node_features[i, 137] = 0
-        else:
+        if num_hs == 1:
             node_features[i, 137] = 1
+        elif num_hs == 2:
+            node_features[i, 138] = 1
+        elif num_hs == 3:
+            node_features[i, 139] = 1
+        elif num_hs == 4:
+            node_features[i, 140] = 1
+        elif num_hs > 4:
+            node_features[i, 141] = 1
         # get if atom is on a ring
         if i in all_ring_atoms:
             node_features[i, 131] = 1
@@ -131,7 +137,7 @@ class TorEmbeddedMolecule:
         self.smiles = Chem.MolToSmiles(rdmol) 
         self.torsions = []
         all_tors = get_all_torsions_to_opt(rdmol)
-        embed = get_embed(rdmol, layers=2)
+        embed = get_embed(rdmol, layers=1)
         for tor in all_tors:
             tor_embed1 = embed[tor, :]
             tor_embed2 = embed[tor[::-1], :]
