@@ -60,7 +60,8 @@ def build_gmx_top(
             sum_engine = merge_calculators(opt_engine, bias_engine)
             # deal with conformations
             confs = []
-            confs.append(rdmol)
+            mol_opt = optimize(rdmol, sum_engine, freeze=[])
+            confs.append(mol_opt)
             # for nc in range(1, num_conf):
             #     new_mol = deepcopy(rdmol)
             #     AllChem.EmbedMolecule(new_mol)
