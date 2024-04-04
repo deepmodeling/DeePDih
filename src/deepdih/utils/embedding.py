@@ -16,8 +16,9 @@ def mol_to_graph_matrix(rdmol: Chem.rdchem.Mol) -> Tuple[np.ndarray, np.ndarray]
     # embedding: element one-hot + aromatic + degree + formal_charge + num_hydrogens
     num_atom = rdmol.GetNumAtoms()
     adj = np.zeros((num_atom, num_atom))
-    node_features = np.zeros((num_atom, 128 + 4))
+    node_features = np.zeros((num_atom, 128 + 10))
     all_ring_atoms = getRingAtoms(rdmol, join=True)
+    all_ring_no_join = getRingAtoms(rdmol, join=False)
     for i in range(num_atom):
         adj[i, i] = 1
         # element one-hot
@@ -38,13 +39,27 @@ def mol_to_graph_matrix(rdmol: Chem.rdchem.Mol) -> Tuple[np.ndarray, np.ndarray]
         neighbors = rdmol.GetAtomWithIdx(i).GetNeighbors()
         # get linked atoms
         num_hs = len([atom for atom in neighbors if atom.GetAtomicNum() == 1])
-        # if num_hs == 0:
-        #     node_features[i, 131] = 0
-        # else:
-        #     node_features[i, 131] = 1
+        # node_features[i, 137] = num_hs
+        if num_hs == 0:
+            node_features[i, 137] = 0
+        else:
+            node_features[i, 137] = 1
         # get if atom is on a ring
         if i in all_ring_atoms:
             node_features[i, 131] = 1
+            for ring in all_ring_no_join:
+                if i in ring:
+                    len_ring = len(ring)
+                    if len_ring == 3:
+                        node_features[i, 132] += 1
+                    elif len_ring == 4:
+                        node_features[i, 133] += 1
+                    elif len_ring == 5:
+                        node_features[i, 134] += 1
+                    elif len_ring == 6:
+                        node_features[i, 135] += 1
+                    else:
+                        node_features[i, 136] += 1
         else:
             node_features[i, 131] = 0
 
@@ -54,7 +69,7 @@ def mol_to_graph_matrix(rdmol: Chem.rdchem.Mol) -> Tuple[np.ndarray, np.ndarray]
     return adj, node_features
 
 
-def get_embed(rdmol: Chem.rdchem.Mol, layers=1):
+def get_embed(rdmol: Chem.rdchem.Mol, layers=2):
     adj, node = mol_to_graph_matrix(rdmol)
     natom = adj.shape[0]
 
@@ -76,7 +91,7 @@ def get_eqv_atoms(rdmol: Chem.rdchem.Mol, layers=1):
     for na in range(natom):
         eqv_list.append([na])
         for nb in range(natom):
-            if dist[na, nb] < 1e-3 and na != nb:
+            if dist[na, nb] < 1e-4 and na != nb:
                 eqv_list[-1].append(nb)
     return eqv_list
 
@@ -84,7 +99,7 @@ def get_eqv_atoms(rdmol: Chem.rdchem.Mol, layers=1):
 
 def if_same_embed(e1, e2):
     dist = np.linalg.norm(e1 - e2)
-    if dist < 1e-2:
+    if dist < 1e-4:
         return True
     return False
 
@@ -115,14 +130,13 @@ class TorEmbeddedMolecule:
         self.rdmol = rdmol
         self.smiles = Chem.MolToSmiles(rdmol) 
         self.torsions = []
-        embed = get_embed(rdmol)
         all_tors = get_all_torsions_to_opt(rdmol)
-        embed = get_embed(rdmol)
+        embed = get_embed(rdmol, layers=2)
         for tor in all_tors:
             tor_embed1 = embed[tor, :]
             tor_embed2 = embed[tor[::-1], :]
             tor_embed = (tor_embed1 + tor_embed2) / 2
-            self.torsions.append(EmbeddedTorsion(tor, tor_embed))
+            self.torsions.append(EmbeddedTorsion(tor, tor_embed.ravel()))
         self.conf = conf
         self.target = target
         self.tor_vals = []

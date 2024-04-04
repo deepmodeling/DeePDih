@@ -5,7 +5,7 @@ settings = {
     "ring_torsion_bias": 418.4,
     "dihedral_scan_steps": 12,
     "optimization_folds": 3,
-    "optimization_steps": 2000,
+    "optimization_steps": 5000,
     "resp_threads": 4,
     "resp_memory": "4GB"
 }

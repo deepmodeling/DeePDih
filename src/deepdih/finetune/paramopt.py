@@ -39,7 +39,7 @@ class Parameters:
     def add(self, embedding: np.ndarray):
         if embedding not in self:
             self.embeddings.append(embedding)
-            prm_tmp = torch.from_numpy(np.random.randn(6)).reshape((1, 6))
+            prm_tmp = torch.from_numpy(np.random.randn(6)).reshape((1, 6)) * 2.
             self.parameters = torch.cat((self.parameters, prm_tmp))
 
     def remove(self, embedding: np.ndarray):
@@ -87,13 +87,13 @@ def loss_molecule(param_vals: torch.Tensor, dihedrals: torch.Tensor, targets: to
     energy_term = (cos_val * param_kconsts).sum(axis=2).sum(axis=1).ravel()
     energy_term_center = energy_term - torch.mean(energy_term)
     targets_center = targets - torch.mean(targets)
-    return torch.mean((energy_term_center - targets_center) ** 2)
+    return torch.pow(energy_term_center - targets_center, 2).mean()
 
 
 def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], l1_reg: float = 0.1) -> Parameters:
     param_vals = torch.autograd.Variable(
         parameters.parameters, requires_grad=True)
-    optimizer = torch.optim.Adam([param_vals], lr=0.01)
+    optimizer = torch.optim.AdamW([param_vals], lr=1.0, weight_decay=0.0)
 
     num_epochs = settings['optimization_steps']
     for epoch in range(num_epochs):
