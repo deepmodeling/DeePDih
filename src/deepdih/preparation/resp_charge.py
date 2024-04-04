@@ -51,7 +51,8 @@ def get_resp_charge(rdmol, use_dft=True):
         mol.set_name(f'conformer')
 
         psi4.core.clean()
-        psi4.core.IOManager.set_default_path(str(tmppath))
+        iomanager = psi4.core.IOManager()
+        iomanager.set_default_path(str(tmppath))
         psi4.set_num_threads(settings['resp_threads'])
         psi4.set_memory(settings['resp_memory'])
         psi4.set_options({
