@@ -113,7 +113,7 @@ class OpenMMBiasCalculator(Calculator):
                                 if n1.GetAtomicNum() == 1 and n2.GetAtomicNum() == 1:
                                     continue
                                 dih_val = dihedral(
-                                    positions[ii], positions[jj], positions[kk], positions[ll])
+                                    positions[n1.GetIdx()], positions[i1], positions[i2], positions[n2.GetIdx()])
                                 ring_dihedrals.append((n1.GetIdx(), i1, i2, n2.GetIdx(), dih_val))
 
             force = mm.CustomTorsionForce("0.5*k*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-theta0); pi = 3.1415926535")
