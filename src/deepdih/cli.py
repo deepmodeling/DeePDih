@@ -3,6 +3,7 @@ import os
 import sys
 from .workflow import build_fragment_library, build_gmx_parameter_lib, valid_gmx_parameter_lib, patch_gmx_top
 from .preparation.resp_charge import get_resp_charge
+from .settings import settings
 
 
 def main():
@@ -15,6 +16,7 @@ def resp_cmd():
     parser = argparse.ArgumentParser(description="Calculate RESP charge")
     parser.add_argument("--input", type=str, nargs="+", help="Input sdf file[s]")
     parser.add_argument("--output", help="Output txt file")
+    parser.add_argument("--method", type=str, default='hf', help="QM method for RESP calculation. ['hf', 'dft']")
     parser.add_argument("--threads", type=int, default=1, help="Number of threads for psi4")
     parser.add_argument("--memory", help="Memory for psi4", default="2GB")
     args = parser.parse_args()
@@ -28,10 +30,16 @@ def resp_cmd():
     import psi4
 
     # set threads
-    psi4.set_num_threads(args.threads)
-    # set memory
-    psi4.set_memory(args.memory)
+    settings['resp_threads'] = args.threads
+    settings['resp_memory'] = args.memory
 
-    resp_charge = get_resp_charge(rdmol_list)
+    if args.method == 'hf':
+        use_dft = False
+    elif args.method == 'dft':
+        use_dft = True
+    else:
+        raise ValueError(f"Method {args.method} is not supported.")
+
+    resp_charge = get_resp_charge(rdmol_list, use_dft=use_dft)
     with open(args.output, "w") as f:
         f.write("\n".join([f"{c:16.8f}" for c in resp_charge]))
