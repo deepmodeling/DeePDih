@@ -94,25 +94,53 @@ class OpenMMBiasCalculator(Calculator):
             force = mm.HarmonicAngleForce()
             self.system.addForce(force)
 
-            # add heavy atom rmsd restraint
-            force = mm.CustomExternalForce("k*((x-x0)^2+(y-y0)^2+(z-z0)^2)")
-            force.addPerParticleParameter("k")
-            force.addPerParticleParameter("x0")
-            force.addPerParticleParameter("y0")
-            force.addPerParticleParameter("z0")
-            for iatom in ring_atoms:
-                atom = self.rdmol.GetAtomWithIdx(iatom)
-                if atom.GetAtomicNum() > 1:
-                    force.addParticle(
-                        iatom, 
-                        [
-                            settings['ring_atom_rmsd'], 
-                            positions[iatom][0]*0.1, 
-                            positions[iatom][1]*0.1, 
-                            positions[iatom][2]*0.1
-                        ]
-                    )
+            # add ring atom restraints
+            # 1. restraint dihedrals in which the ring bonds are rotamers
+            ring_rotamers = []
+            for bond in rdmol.GetBonds():
+                i1, i2 = bond.GetBeginAtom().GetIdx(), bond.GetEndAtom().GetIdx()
+                if i1 in ring_atoms and i2 in ring_atoms:
+                    ring_rotamers.append((i1, i2))
+            
+            ring_dihedrals = []
+            for i1, i2 in ring_rotamers:
+                a1 = self.rdmol.GetAtomWithIdx(i1)
+                a2 = self.rdmol.GetAtomWithIdx(i2)
+                for n1 in a1.GetNeighbors():
+                    if n1.GetIdx() != i2:
+                        for n2 in a2.GetNeighbors():
+                            if n2.GetIdx() != i1:
+                                if n1.GetAtomicNum() == 1 and n2.GetAtomicNum() == 1:
+                                    continue
+                                dih_val = dihedral(
+                                    positions[ii], positions[jj], positions[kk], positions[ll])
+                                ring_dihedrals.append((n1.GetIdx(), i1, i2, n2.GetIdx(), dih_val))
+
+            force = mm.CustomTorsionForce("0.5*k*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-theta0); pi = 3.1415926535")
+            force.addPerTorsionParameter("theta0")
+            force.addPerTorsionParameter("k")
+            for ii, jj, kk, ll, target in ring_dihedrals:
+                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, settings['relax_torsion_bias']])
             self.system.addForce(force)
+
+            # force = mm.CustomExternalForce("k*((x-x0)^2+(y-y0)^2+(z-z0)^2)")
+            # force.addPerParticleParameter("k")
+            # force.addPerParticleParameter("x0")
+            # force.addPerParticleParameter("y0")
+            # force.addPerParticleParameter("z0")
+            # for iatom in ring_atoms:
+            #     atom = self.rdmol.GetAtomWithIdx(iatom)
+            #     if atom.GetAtomicNum() > 1:
+            #         force.addParticle(
+            #             iatom, 
+            #             [
+            #                 settings['ring_atom_rmsd'], 
+            #                 positions[iatom][0]*0.1, 
+            #                 positions[iatom][1]*0.1, 
+            #                 positions[iatom][2]*0.1
+            #             ]
+            #         )
+            # self.system.addForce(force)
 
 
 
