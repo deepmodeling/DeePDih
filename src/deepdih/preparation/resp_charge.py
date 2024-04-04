@@ -29,57 +29,57 @@ def get_resp_charge(rdmol, use_dft=True):
             eqv_list.append(atom+1)
         final_eqv_list.append(eqv_list)
 
-    geom_list = []
-    for atom in rdmol.GetAtoms():
-        atom_idx = atom.GetIdx()
-        atom_symbol = atom.GetSymbol()
-        if len(atom_symbol) > 1:
-            atom_symbol = f"{atom_symbol[0].upper()}{atom_symbol[1:].lower()}"
-        atom_pos = rdmol.GetConformer().GetAtomPosition(atom_idx)
-        geom_list.append(f"{atom_symbol} {atom_pos.x} {atom_pos.y} {atom_pos.z}\n")
-    geom = "".join(geom_list)
-    geom += "no_reorient\nno_com\n"
-    formal_charge = Chem.GetFormalCharge(rdmol)
-    mol = psi4.geometry(geom)
-    mol.set_units(psi4.core.GeometryUnits.Angstrom)
-    mol.set_molecular_charge(formal_charge)
-    mol.set_multiplicity(1)
-    mol.update_geometry()
-    mol.set_name(f'conformer')
-
-    psi4.core.clean()
-    psi4.set_num_threads(settings['resp_threads'])
-    psi4.set_memory(settings['resp_memory'])
-    psi4.set_options({
-        'e_convergence':        1e-8,
-        'd_convergence':        1e-8,
-        'dft_spherical_points': 590,
-        'dft_radial_points':    99,
-    })
-
-    if use_dft:
-        psi4.set_options({"pcm": True, "pcm_scf_type": "total"})
-        psi4.pcm_helper("""Units = Angstrom
-        Medium {
-        SolverType = IEFPCM
-        Solvent = water
-        }
-        Cavity {
-        RadiiSet = UFF
-        Type = GePol
-        Scaling = False
-        Area = 0.4
-        Mode = Implicit
-        }""")
-        scf_e, scf_wfn = psi4.energy('b3lyp/def2-svp', molecule=mol, return_wfn=True)
-    else:
-        scf_e, scf_wfn = psi4.energy('scf/6-31G*', molecule=mol, return_wfn=True)
-
-    psi4.fchk(scf_wfn, f'conformer.fchk')
-
     with TemporaryDirectory() as tmpdir:
         tmppath = Path(tmpdir)
-        shutil.copy('conformer.fchk', tmppath / "conformer.fchk")
+
+        geom_list = []
+        for atom in rdmol.GetAtoms():
+            atom_idx = atom.GetIdx()
+            atom_symbol = atom.GetSymbol()
+            if len(atom_symbol) > 1:
+                atom_symbol = f"{atom_symbol[0].upper()}{atom_symbol[1:].lower()}"
+            atom_pos = rdmol.GetConformer().GetAtomPosition(atom_idx)
+            geom_list.append(f"{atom_symbol} {atom_pos.x} {atom_pos.y} {atom_pos.z}\n")
+        geom = "".join(geom_list)
+        geom += "no_reorient\nno_com\n"
+        formal_charge = Chem.GetFormalCharge(rdmol)
+        mol = psi4.geometry(geom)
+        mol.set_units(psi4.core.GeometryUnits.Angstrom)
+        mol.set_molecular_charge(formal_charge)
+        mol.set_multiplicity(1)
+        mol.update_geometry()
+        mol.set_name(f'conformer')
+
+        psi4.core.clean()
+        psi4.core.IOManager.set_default_path(str(tmppath))
+        psi4.set_num_threads(settings['resp_threads'])
+        psi4.set_memory(settings['resp_memory'])
+        psi4.set_options({
+            'e_convergence':        1e-8,
+            'd_convergence':        1e-8,
+            'dft_spherical_points': 590,
+            'dft_radial_points':    99,
+        })
+
+        if use_dft:
+            psi4.set_options({"pcm": True, "pcm_scf_type": "total"})
+            psi4.pcm_helper("""Units = Angstrom
+            Medium {
+            SolverType = IEFPCM
+            Solvent = water
+            }
+            Cavity {
+            RadiiSet = UFF
+            Type = GePol
+            Scaling = False
+            Area = 0.4
+            Mode = Implicit
+            }""")
+            scf_e, scf_wfn = psi4.energy('b3lyp/def2-svp', molecule=mol, return_wfn=True)
+        else:
+            scf_e, scf_wfn = psi4.energy('scf/6-31G*', molecule=mol, return_wfn=True)
+
+        psi4.fchk(scf_wfn, str(tmppath / "conformer.fchk"))
 
         isHeavy = False
         for atom in rdmol.GetAtoms():
