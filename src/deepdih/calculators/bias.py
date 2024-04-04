@@ -13,7 +13,7 @@ import numpy as np
 import networkx as nx
 
 from ..settings import settings
-from ..utils.geometry import dihedral
+from ..utils.geometry import dihedral, angle
 from ..utils import EV_TO_HARTREE, EV_TO_KJ_MOL, rdmol2graph
 from ..utils.topology import getRingAtoms
 
@@ -90,8 +90,20 @@ class OpenMMBiasCalculator(Calculator):
             # list ring atoms
             ring_atoms = getRingAtoms(rdmol, join=True)
 
-            # add angle restraint on heavy-heavy-heavy and heavy-heavy-hydrogen angles
+            # add angle restraint on heavy-heavy-heavy angles
             force = mm.HarmonicAngleForce()
+            for atom in rdmol.GetAtoms():
+                if atom.GetIdx() not in ring_atoms:
+                    continue
+                ring_neighbors = []
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in ring_atoms:
+                        ring_neighbors.append(neighbor.GetIdx())
+                if len(ring_neighbors) >= 2:
+                    for i in range(len(ring_neighbors)):
+                        for j in range(i+1, len(ring_neighbors)):
+                            angle_val = angle(positions[ring_neighbors[i]], positions[atom.GetIdx()], positions[ring_neighbors[j]])
+                            force.addAngle(ring_neighbors[i], atom.GetIdx(), ring_neighbors[j], angle_val, settings['ring_angle_bias'])
             self.system.addForce(force)
 
             # add ring atom restraints
@@ -120,7 +132,7 @@ class OpenMMBiasCalculator(Calculator):
             force.addPerTorsionParameter("theta0")
             force.addPerTorsionParameter("k")
             for ii, jj, kk, ll, target in ring_dihedrals:
-                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, settings['relax_torsion_bias']])
+                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, settings['ring_torsion_bias']])
             self.system.addForce(force)
 
             # force = mm.CustomExternalForce("k*((x-x0)^2+(y-y0)^2+(z-z0)^2)")
