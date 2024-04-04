@@ -96,14 +96,22 @@ class OpenMMBiasCalculator(Calculator):
                 if atom.GetIdx() not in ring_atoms:
                     continue
                 ring_neighbors = []
+                not_ring_neighbors = []
                 for neighbor in atom.GetNeighbors():
                     if neighbor.GetIdx() in ring_atoms:
                         ring_neighbors.append(neighbor.GetIdx())
+                    else:
+                        not_ring_neighbors.append(neighbor.GetIdx())
                 if len(ring_neighbors) >= 2:
                     for i in range(len(ring_neighbors)):
                         for j in range(i+1, len(ring_neighbors)):
                             angle_val = angle(positions[ring_neighbors[i]], positions[atom.GetIdx()], positions[ring_neighbors[j]])
                             force.addAngle(ring_neighbors[i], atom.GetIdx(), ring_neighbors[j], angle_val, settings['ring_angle_bias'])
+                if len(ring_neighbors) >= 1 and len(not_ring_neighbors) >= 1:
+                    for i in range(len(ring_neighbors)):
+                        for j in range(len(not_ring_neighbors)):
+                            angle_val = angle(positions[ring_neighbors[i]], positions[atom.GetIdx()], positions[not_ring_neighbors[j]])
+                            force.addAngle(ring_neighbors[i], atom.GetIdx(), not_ring_neighbors[j], angle_val, settings['ring_angle_bias'])
             self.system.addForce(force)
 
             # add ring atom restraints
