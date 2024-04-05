@@ -86,3 +86,20 @@ def fix_aromatic(mol: Chem.rdchem.Mol):
     for atom in mol.GetAtoms():
         if atom.GetIdx() not in all_ring_atoms:
             atom.SetIsAromatic(False)
+
+
+def read_xyz_coords(filename):
+    with open(filename, "r") as f:
+        lines = f.readlines()
+    
+    coords = []
+    pidx = 0
+    while pidx < len(lines):
+        natoms = int(lines[pidx])
+        pidx += 2
+        coords.append([])
+        for _ in range(natoms):
+            line = lines[pidx].split()
+            coords[-1].append([float(x) for x in line[1:]])
+            pidx += 1
+    return np.array(coords)

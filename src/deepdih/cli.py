@@ -40,6 +40,6 @@ def resp_cmd():
     else:
         raise ValueError(f"Method {args.method} is not supported.")
 
-    resp_charge = get_resp_charge(rdmol_list[0], use_dft=use_dft)
+    resp_charge = get_resp_charge(rdmol_list, use_dft=use_dft)
     with open(args.output, "w") as f:
         f.write("\n".join([f"{c:16.8f}" for c in resp_charge]))

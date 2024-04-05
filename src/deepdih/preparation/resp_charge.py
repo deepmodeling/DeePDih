@@ -13,24 +13,9 @@ import shutil
 import numpy as np
 
 
-def get_resp_charge(rdmol, use_dft=True):
-    eqv_atoms = get_eqv_atoms(rdmol, layers=4)
-    eqv_sets = [set(atoms) for atoms in eqv_atoms]
-
-    new_set = []
-    for eqv_set in eqv_sets:
-        if len(eqv_set) > 1 and eqv_set not in new_set:
-            new_set.append(eqv_set)
-
-    final_eqv_list = []
-    for eqv_set in new_set:
-        eqv_list = []
-        for atom in eqv_set:
-            eqv_list.append(atom+1)
-        final_eqv_list.append(eqv_list)
-
-    with TemporaryDirectory() as tmpdir:
-        tmppath = Path(tmpdir)
+def generate_fchk(rdmol: Chem.Mol, fchk_file, use_dft: bool = False):
+    with TemporaryDirectory() as qm_tmp:
+        tmppath = Path(qm_tmp)
 
         geom_list = []
         for atom in rdmol.GetAtoms():
@@ -78,27 +63,68 @@ def get_resp_charge(rdmol, use_dft=True):
             }""")
             scf_e, scf_wfn = psi4.energy('b3lyp/def2-svp', molecule=mol, return_wfn=True)
         else:
-            scf_e, scf_wfn = psi4.energy('scf/6-31G*', molecule=mol, return_wfn=True)
+            scf_e, scf_wfn = psi4.energy('scf/def2-svp', molecule=mol, return_wfn=True)
 
-        psi4.fchk(scf_wfn, str(tmppath / "conformer.fchk"))
+        psi4.fchk(scf_wfn, fchk_file)
+        psi4.core.clean()
+
+
+def get_resp_charge(rdmol_list: List[Chem.Mol], use_dft=True):
+    rdmol = rdmol_list[0]
+    eqv_atoms = get_eqv_atoms(rdmol, layers=4)
+    eqv_sets = [set(atoms) for atoms in eqv_atoms]
+
+    new_set = []
+    for eqv_set in eqv_sets:
+        if len(eqv_set) > 1 and eqv_set not in new_set:
+            new_set.append(eqv_set)
+
+    final_eqv_list = []
+    for eqv_set in new_set:
+        eqv_list = []
+        for atom in eqv_set:
+            eqv_list.append(atom+1)
+        final_eqv_list.append(eqv_list)
+
+    with TemporaryDirectory() as tmpdir:
+        tmppath = Path(tmpdir)
+
+        for nmol, mol in enumerate(rdmol_list):
+            generate_fchk(mol, str(tmppath / f"conformer_{nmol}.fchk"), use_dft=use_dft)
 
         isHeavy = False
         for atom in rdmol.GetAtoms():
             if atom.GetAtomicNum() > 18:
                 isHeavy = True
                 break
+        
+        with open(tmppath / "conf_list.txt", "w") as f:
+            for nmol in range(len(rdmol_list)):
+                f.write(f"conformer_{nmol}.fchk {1.0/len(rdmol_list):.4f}\n")
 
         with open(tmppath / "eqv_list.txt", "w") as f:
             for eqv in final_eqv_list:
                 f.write(" ".join(map(str, eqv)) + "\n")
 
         with open(tmppath / "run_espfit.txt", "w") as f:
-            f.write("7\n18\n5\n1\neqv_list.txt\n1\n")
+            f.write("7\n18\n3\n2\n0\n-1\nconf_list.txt\n5\n1\neqv_list.txt\n1\n")
             if isHeavy:
                 f.write("\n")
-            f.write("y\n0\n0\nq\n")
+            if len(rdmol_list) > 1:
+                f.write("y\n")
+            f.write("0\n0\nq\n")
 
-        subprocess.run("Multiwfn conformer.fchk < run_espfit.txt", shell=True, cwd=tmpdir)
-
-        charges = np.loadtxt(tmppath / "conformer.chg", usecols=4)
+        ret = subprocess.run("Multiwfn conformer_0.fchk < run_espfit.txt", shell=True, cwd=tmpdir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        stdout = ret.stdout.decode("utf-8").split("\n")
+        pinit, pend = None, None
+        for nline, line in enumerate(stdout):
+            if "Center" in line and "Charge" in line:
+                pinit = nline
+            if "Sum of charges:" in line:
+                pend = nline
+                break
+        charges = []
+        for nline in range(pinit+1, pend):
+            charges.append(float(stdout[nline].strip().split()[-1]))
+        charges = np.array(charges)
     return charges
