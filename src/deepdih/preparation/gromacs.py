@@ -57,6 +57,8 @@ def build_gmx_top(
             # deal with conformations
             if multi_conf:
                 confs = gen_multi_conformations(rdmol)
+                if len(confs) > 8:
+                    confs = confs[:8]
             else:
                 confs = []
             confs.append(rdmol)
