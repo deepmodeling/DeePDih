@@ -111,11 +111,11 @@ def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, t
     return parameters
 
 
-def finetune_workflow(molecules: List[TorEmbeddedMolecule], n_fold: int = 3, l1_reg: float = 0.1) -> Parameters:
+def finetune_workflow(molecules: List[TorEmbeddedMolecule], n_fold: int = 3, l1_reg: float = 0.0, l2_reg: float = 0.1) -> Parameters:
     param_list = []
     for nf in range(n_fold):
         params, data = build_training_data(molecules)
-        params = optimize_parameters(params, data, l1_reg=l1_reg)
+        params = optimize_parameters(params, data, l1_reg=l1_reg, l2_reg=l2_reg)
         param_list.append(params)
 
     # merge parameters
