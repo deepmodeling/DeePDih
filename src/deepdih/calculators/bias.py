@@ -28,7 +28,8 @@ class OpenMMBiasCalculator(Calculator):
         rdmol: Chem.rdchem.Mol,
         restraints: List[Tuple[int, int, int, int]] = [],
         restraint_ring: bool = False,
-        h_bond_repulsion: bool = True, **kwargs
+        h_bond_repulsion: bool = True,
+        restraint_mad: bool = True, **kwargs
     ):
         Calculator.__init__(self, label=self.name, **kwargs)
         self.rdmol = rdmol
@@ -162,6 +163,24 @@ class OpenMMBiasCalculator(Calculator):
             #         )
             # self.system.addForce(force)
 
+        if restraint_mad:
+            force = mm.CustomExternalForce("step(dist-0.08)*k*(dist-0.08)^2;dist=sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)")
+            force.addPerParticleParameter("k")
+            force.addPerParticleParameter("x0")
+            force.addPerParticleParameter("y0")
+            force.addPerParticleParameter("z0")
+            for iatom in range(self.rdmol.GetNumAtoms()):
+                atom = self.rdmol.GetAtomWithIdx(iatom)
+                force.addParticle(
+                    iatom, 
+                    [
+                        1000.0, 
+                        positions[iatom][0]*0.1, 
+                        positions[iatom][1]*0.1, 
+                        positions[iatom][2]*0.1
+                    ]
+                )
+            self.system.addForce(force)
 
 
         # create a integrator
