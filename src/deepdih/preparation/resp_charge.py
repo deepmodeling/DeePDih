@@ -104,7 +104,7 @@ def get_resp_charge(rdmol_list: List[Chem.Mol], use_dft=True):
 
         with open(tmppath / "eqv_list.txt", "w") as f:
             for eqv in final_eqv_list:
-                f.write(" ".join(map(str, eqv)) + "\n")
+                f.write(",".join(map(str, eqv)) + "\n")
 
         with open(tmppath / "run_espfit.txt", "w") as f:
             f.write("7\n18\n3\n2\n0\n-1\nconf_list.txt\n5\n1\neqv_list.txt\n1\n")
