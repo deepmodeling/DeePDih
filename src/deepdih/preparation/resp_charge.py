@@ -63,7 +63,7 @@ def generate_fchk(rdmol: Chem.Mol, fchk_file, use_dft: bool = False):
             }""")
             scf_e, scf_wfn = psi4.energy('b3lyp/def2-svp', molecule=mol, return_wfn=True)
         else:
-            scf_e, scf_wfn = psi4.energy('scf/def2-svp', molecule=mol, return_wfn=True)
+            scf_e, scf_wfn = psi4.energy('scf/6-31G*', molecule=mol, return_wfn=True)
 
         psi4.fchk(scf_wfn, fchk_file)
         psi4.core.clean()
