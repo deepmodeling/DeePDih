@@ -90,7 +90,7 @@ def loss_molecule(param_vals: torch.Tensor, dihedrals: torch.Tensor, targets: to
     return torch.pow(energy_term_center - targets_center, 2).mean()
 
 
-def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], l1_reg: float = 0.1) -> Parameters:
+def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, torch.Tensor, torch.Tensor]], l1_reg: float = 0.1, l2_reg: float = 0.1) -> Parameters:
     param_vals = torch.autograd.Variable(
         parameters.parameters, requires_grad=True)
     optimizer = torch.optim.AdamW([param_vals], lr=1.0, weight_decay=0.0)
@@ -101,7 +101,7 @@ def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, t
         loss_vals = [loss_molecule(param_vals, *datum) for datum in data]
         loss_sum = sum(loss_vals)
         loss = loss_sum / len(loss_vals)
-        reg = l1_reg * torch.abs(param_vals).mean()
+        reg = l1_reg * torch.abs(param_vals).mean() + l2_reg * torch.sqrt(torch.pow(param_vals, 2).mean())
         loss_tot = loss + reg
         loss_tot.backward()
         optimizer.step()
