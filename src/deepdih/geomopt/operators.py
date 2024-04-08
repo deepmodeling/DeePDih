@@ -51,7 +51,7 @@ def dihedral_scan(
     cons_dihedrals = find_constraint_elements(
         rdmol, return_all=True, add_improper=True)
     hbond_bias = OpenMMBiasCalculator(
-        rdmol, restraints=[], h_bond_repulsion=True)
+        rdmol, restraints=[], h_bond_repulsion=True, restraint_ring=True)
     ff_potential = merge_calculators(calculator, hbond_bias)
 
     # initial optimization
