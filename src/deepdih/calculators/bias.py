@@ -29,7 +29,7 @@ class OpenMMBiasCalculator(Calculator):
         restraints: List[Tuple[int, int, int, int]] = [],
         restraint_ring: bool = False,
         h_bond_repulsion: bool = True,
-        restraint_mad: bool = True, **kwargs
+        restraint_all_torsions: bool = True, **kwargs
     ):
         Calculator.__init__(self, label=self.name, **kwargs)
         self.rdmol = rdmol
@@ -69,7 +69,7 @@ class OpenMMBiasCalculator(Calculator):
                                       settings['hbond_repulsion']])
             self.system.addForce(force)
 
-        # create a force
+        # restrain rotamer torsions
         target_vals = []
         positions = rdmol.GetConformer().GetPositions()
         for ii, jj, kk, ll in restraints:
@@ -85,6 +85,32 @@ class OpenMMBiasCalculator(Calculator):
             for ii, jj, kk, ll, target in target_vals:
                 force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, settings['relax_torsion_bias']])
             self.system.addForce(force)
+
+        # restraint all torsions
+        if restraint_all_torsions:
+            target_vals = []
+            positions = rdmol.GetConformer().GetPositions()
+            for bond in rdmol.GetBonds():
+                i1, i2 = bond.GetBeginAtom().GetIdx(), bond.GetEndAtom().GetIdx()
+                a1 = self.rdmol.GetAtomWithIdx(i1)
+                a2 = self.rdmol.GetAtomWithIdx(i2)
+                for n1 in a1.GetNeighbors():
+                    if n1.GetIdx() != i2:
+                        for n2 in a2.GetNeighbors():
+                            if n2.GetIdx() != i1:
+                                if n1.GetAtomicNum() == 1 and n2.GetAtomicNum() == 1:
+                                    continue
+                                dih_val = dihedral(
+                                    positions[n1.GetIdx()], positions[i1], positions[i2], positions[n2.GetIdx()])
+                                target_vals.append((n1.GetIdx(), i1, i2, n2.GetIdx(), dih_val))
+
+            force = mm.CustomTorsionForce("0.5*k*min(dtheta, 2*pi-dtheta)^2; dtheta = abs(theta-theta0); pi = 3.1415926535")
+            force.addPerTorsionParameter("theta0")
+            force.addPerTorsionParameter("k")
+            for ii, jj, kk, ll, target in target_vals:
+                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, 0.1 * settings['torsion_bias']])
+            self.system.addForce(force)
+
 
         # restraint 3/4/5/6-membered rings
         if restraint_ring:
@@ -162,26 +188,6 @@ class OpenMMBiasCalculator(Calculator):
             #             ]
             #         )
             # self.system.addForce(force)
-
-        if restraint_mad:
-            force = mm.CustomExternalForce("step(dist-0.08)*k*(dist-0.08)^2;dist=sqrt((x-x0)^2+(y-y0)^2+(z-z0)^2)")
-            force.addPerParticleParameter("k")
-            force.addPerParticleParameter("x0")
-            force.addPerParticleParameter("y0")
-            force.addPerParticleParameter("z0")
-            for iatom in range(self.rdmol.GetNumAtoms()):
-                atom = self.rdmol.GetAtomWithIdx(iatom)
-                force.addParticle(
-                    iatom, 
-                    [
-                        1000.0, 
-                        positions[iatom][0]*0.1, 
-                        positions[iatom][1]*0.1, 
-                        positions[iatom][2]*0.1
-                    ]
-                )
-            self.system.addForce(force)
-
 
         # create a integrator
         self.integrator = mm.VerletIntegrator(1e-12*unit.picoseconds)
