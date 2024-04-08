@@ -29,7 +29,7 @@ class OpenMMBiasCalculator(Calculator):
         restraints: List[Tuple[int, int, int, int]] = [],
         restraint_ring: bool = False,
         h_bond_repulsion: bool = True,
-        restraint_all_torsions: bool = True, **kwargs
+        restraint_all_torsions: bool = False, **kwargs
     ):
         Calculator.__init__(self, label=self.name, **kwargs)
         self.rdmol = rdmol
@@ -108,7 +108,7 @@ class OpenMMBiasCalculator(Calculator):
             force.addPerTorsionParameter("theta0")
             force.addPerTorsionParameter("k")
             for ii, jj, kk, ll, target in target_vals:
-                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, 0.1 * settings['torsion_bias']])
+                force.addTorsion(ii, jj, kk, ll, [target / 180.0 * np.pi, 0.1 * settings['ring_torsion_bias']])
             self.system.addForce(force)
 
 
