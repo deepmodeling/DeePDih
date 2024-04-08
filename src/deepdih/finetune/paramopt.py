@@ -101,7 +101,7 @@ def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, t
         loss_vals = [loss_molecule(param_vals, *datum) for datum in data]
         loss_sum = sum(loss_vals)
         loss = loss_sum / len(loss_vals)
-        reg = l1_reg * torch.abs(param_vals).mean() + l2_reg * torch.sqrt(torch.pow(param_vals, 2).mean())
+        reg = l1_reg * torch.abs(param_vals).mean() + l2_reg * torch.sqrt(torch.pow(param_vals, 2).mean()) + 100.0 * torch.pow(param_vals[:,4:], 2).mean()
         loss_tot = loss + reg
         loss_tot.backward()
         optimizer.step()
@@ -111,7 +111,7 @@ def optimize_parameters(parameters: Parameters, data: List[Tuple[torch.Tensor, t
     return parameters
 
 
-def finetune_workflow(molecules: List[TorEmbeddedMolecule], n_fold: int = 3, l1_reg: float = 0.0, l2_reg: float = 0.1) -> Parameters:
+def finetune_workflow(molecules: List[TorEmbeddedMolecule], n_fold: int = 3, l1_reg: float = 0.0, l2_reg: float = 10.0) -> Parameters:
     param_list = []
     for nf in range(n_fold):
         params, data = build_training_data(molecules)
