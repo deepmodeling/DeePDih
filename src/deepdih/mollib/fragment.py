@@ -361,6 +361,18 @@ class Fragmentation(object):
         self.get_selected_atoms()
         print(f"Selected Atoms after adding non-C/H: {self.selected_atoms}")
 
+        # Find all the atoms linked to rings if the ring included in layer_1
+        for nring, ring in enumerate(self.rings):
+            if layer_1[0] in ring or layer_1[1] in ring:
+                # loop all the atoms linked to ring
+                for atom_idx in ring:
+                    atom = self.mol.GetAtomWithIdx(atom_idx)
+                    for neighbor in atom.GetNeighbors():
+                        neighbor_idx = neighbor.GetIdx()
+                        self.add_atom(neighbor_idx)
+        self.get_selected_atoms()
+        print(f"Selected Atoms after adding all atoms linked to layer 1 rings: {self.selected_atoms}")
+
         # [start] >>> Functional Groups <<<
 
         # Find P and S atoms in self.selected_atoms linked to O and then add all atoms linked to that S
