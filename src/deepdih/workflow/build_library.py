@@ -24,8 +24,8 @@ from ..utils import (
 def load_mol_files(mol_files: list) -> list:
     mols = []
     for mol_file in mol_files:
-        mol = read_sdf(mol_file)[0]
-        mols.append(mol)
+        mols_ = read_sdf(mol_file)
+        mols.extend(mols_)
     return mols
 
 
