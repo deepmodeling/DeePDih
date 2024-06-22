@@ -51,7 +51,7 @@ def create_lib(rdmols: List[Chem.rdchem.Mol]) -> List[Chem.rdchem.Mol]:
     input_smis = [Chem.MolToSmiles(m) for m in rdmols]
     frags, frag_smiles = [], []
 
-    from multiprocessing import Pool
+    from joblib import Parallel, delayed
 
     input_args = []
     for nmol, rdmol in enumerate(rdmols):
@@ -65,13 +65,8 @@ def create_lib(rdmols: List[Chem.rdchem.Mol]) -> List[Chem.rdchem.Mol]:
     import os
 
     nproc = os.cpu_count()
-    with Pool(nproc) as p:
-        results = []
-        for item in input_args:
-            results.append(p.apply_async(run_create_lib_worker, args=(item,)))
-        p.close()
-        p.join()
-        results = [i.get() for i in results]
+    results = Parallel(n_jobs=nproc)(delayed(run_create_lib_worker)(mol) for mol in input_args)
+    
     for smi, f in results:
         if smi not in frag_smiles:
             frags.append(f)
