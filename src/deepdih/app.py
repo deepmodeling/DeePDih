@@ -1,12 +1,14 @@
 import contextlib
 import zipfile
+import uuid
+import os
+from pathlib import Path
 
 from flask import Flask, request, jsonify, send_from_directory, after_this_request
 from celery import Celery
-from .workflow import build_fragment_library, build_gmx_parameter_lib, valid_gmx_parameter_lib, patch_gmx_top
-import os
-from pathlib import Path
 from werkzeug.utils import secure_filename
+
+from deepdih.workflow import build_fragment_library, build_gmx_parameter_lib, valid_gmx_parameter_lib, patch_gmx_top, gmx_top_to_amber
 
 app = Flask(__name__)
 
@@ -36,13 +38,18 @@ def working_directory(path):
     os.chdir(prev_cwd)
 
 
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'})
+
+
 @app.route('/upload', methods=['POST'])
 def upload_files():
     files = request.files.getlist('file')  # 'file' 是前端上传时用的字段名
     if not files:
         return jsonify({'error': 'No files provided'}), 400
 
-    task_id = str(celery.uuid())
+    task_id = str(uuid.uuid4())
     task_path = Path(RESULTS_DIR) / task_id
     mol_path = task_path / "molecules"
     mol_path.mkdir(exist_ok=True, parents=True)
@@ -60,7 +67,7 @@ def upload_files():
 
     result = main.apply_async((task_id, mol_files), task_id=task_id)
 
-    return jsonify({'message': 'Files uploaded successfully', 'results': result}), 200
+    return jsonify({'message': 'Files uploaded successfully and processing started', 'task_id': task_id}), 200
 
 
 @celery.task
@@ -70,16 +77,16 @@ def main(task_id, mol_files, model_type="DP-GFN2-xTB", model_file="/root/model-g
 
     mol_path = task_path / "molecules"
     molpatch_path = task_path / "molecules_patched"
-    mol_path.mkdir(exist_ok=True)
-    molpatch_path.mkdir(exist_ok=True)
+    mol_path.mkdir(exist_ok=True, parents=True)
+    molpatch_path.mkdir(exist_ok=True, parents=True)
 
     with working_directory(task_path):
 
         print("Prepare Calculator")
         # load QM calculator
-        from .calculators.dp import DPCalculator, DPTBCalculator
+        from deepdih.calculators.dp import DPCalculator, DPTBCalculator
 
-        if model_type == "DP-GFn2-xTB":
+        if model_type == "DP-GFN2-xTB":
             qm_calc = DPTBCalculator(model_file, tb_method="GFN2-xTB")
         else:
             qm_calc = DPCalculator(model_file)
@@ -113,6 +120,7 @@ def main(task_id, mol_files, model_type="DP-GFN2-xTB", model_file="/root/model-g
                 "tmp.top",
                 f"molecules_patched/{name}.top"
             )
+            gmx_top_to_amber(f"molecules_patched/{name}.top", f"molecules_patched/{name}.prmtop")
             os.remove("tmp.top")
     return "Success!"
 
@@ -147,6 +155,7 @@ def task_status(task_id):
 
 @app.route('/download/<task_id>/', methods=['GET'])
 def download_files(task_id):
+    app.logger.info(f"Download start!")
     directory = os.path.join(RESULTS_DIR, task_id)
     if not os.path.exists(directory):
         return jsonify({'error': 'Task not found.'}), 404
@@ -161,9 +170,12 @@ def download_files(task_id):
 
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(directory):
+            print(f"Adding files from {root}")
+            app.logger.info(f"Adding files from {root}")
             for file in files:
                 file_path = os.path.join(root, file)
                 zipf.write(file_path, os.path.relpath(file_path, start=directory))
+    app.logger.info(f"ZIP file created at {zip_path}")
 
     # Serve the ZIP file
     @after_this_request
@@ -179,4 +191,4 @@ def download_files(task_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(port=5000)
