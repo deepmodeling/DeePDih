@@ -187,3 +187,9 @@ def patch_gmx_top(frag_mol: str, param_lib: str, input_top: str = "lig_init.top"
         build_gmx_top(frag, input_top)
 
     update_gmx_top(frag, input_top, params, output_top)
+
+
+def gmx_top_to_amber(gmx_top: str = "lig_mod.top", output_amber: str = "lig_mod.prmtop"):
+    import parmed as pmd
+    parm = pmd.load_file(gmx_top)
+    parm.save(output_amber)
