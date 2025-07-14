@@ -87,6 +87,8 @@ def recalc_energy(
 ) -> float:
     ret_mol = deepcopy(rdmol)
     atoms = rdmol2atoms(ret_mol)
+    charge = sum(atoms.get_initial_charges())
+    calculator.parameters['charge'] = charge
     atoms.calc = calculator
     e = atoms.get_potential_energy() * EV_TO_HARTREE
     ret_mol.SetProp('ENERGY', f"{e:.12e}")
